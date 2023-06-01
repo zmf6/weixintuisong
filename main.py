@@ -54,8 +54,12 @@ def get_weather(region):
     response = get(weather_url, headers=headers).json()
     # 天气
     weather = response["now"]["text"]
-    # 当前温度
-    temp = response["now"]["temp"] + u"\N{DEGREE SIGN}" + "C"
+    # 最高温度
+    max_temp = response["daily"]["temperature"][0]["max"] + u"\N{DEGREE SIGN}" + "C"
+
+    # 最低温度
+    min_temp = response["daily"]["temperature"][0]["min"] + u"\N{DEGREE SIGN}" + "C"
+
     # 风向
     wind_dir = response["now"]["windDir"]
     return weather, temp, wind_dir
