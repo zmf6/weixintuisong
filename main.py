@@ -55,10 +55,12 @@ def get_weather(region):
     weather = response["now"]["text"]
     # 当前温度
     temp = response["now"]["temp"] + u"\N{DEGREE SIGN}" + "C"
+    # 获取每日天气数据
+    daily_data = response["daily"][0]
     # 最高温度
-    temp_max = response["now"]["tempMax"] + u"\N{DEGREE SIGN}" + "C"
+    temp_max = daily_data["tempMax"] + u"\N{DEGREE SIGN}" + "C"
     # 最低温度
-    temp_min = response["now"]["tempMin"] + u"\N{DEGREE SIGN}" + "C"
+    temp_min = daily_data["tempMin"] + u"\N{DEGREE SIGN}" + "C"
     # 风向
     wind_dir = response["now"]["windDir"]
     return weather, temp, temp_max, temp_min, wind_dir
