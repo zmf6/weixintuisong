@@ -1,129 +1,125 @@
-import os
-import sys
-import json
-from datetime import datetime, date
+import random
+from time import localtime
 from requests import get, post
+from datetime import datetime, date
+from zhdate import ZhDate
+import sys
+import os
 
 
 def get_color():
-    colors = ["#FF5722", "#FF9800", "#FFC107", "#FFEB3B", "#CDDC39", "#8BC34A", "#4CAF50", "#009688", "#00BCD4",
-              "#03A9F4", "#2196F3", "#3F51B5", "#673AB7", "#9C27B0", "#E91E63", "#F44336"]
-    today = datetime.now().day
-    return colors[today % len(colors)]
+    # 获取随机颜色
+    get_colors = lambda n: list(map(lambda i: "#" + "%06x" % random.randint(0, 0xFFFFFF), range(n)))
+    color_list = get_colors(100)
+    return random.choice(color_list)
 
 
 def get_access_token():
+    # appId
+    app_id = config["app_id"]
+    # appSecret
+    app_secret = config["app_secret"]
+    post_url = ("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={}&secret={}"
+                .format(app_id, app_secret))
     try:
-        url = "https://api.weixin.qq.com/cgi-bin/token"
-        params = {
-            "grant_type": "client_credential",
-            "appid": config["app_id"],
-            "secret": config["app_secret"]
-        }
-        response = get(url, params=params).json()
-        return response["access_token"]
-    except:
-        print("获取 access_token 失败")
+        access_token = get(post_url).json()['access_token']
+    except KeyError:
+        print("获取access_token失败，请检查app_id和app_secret是否正确")
         os.system("pause")
         sys.exit(1)
+    return access_token
 
 
 def get_weather(region):
-    try:
-        url = "https://free-api.heweather.net/s6/weather/forecast"
-        params = {
-            "location": region,
-            "key": config["weather_key"]
-        }
-        response = get(url, params=params).json()
-        forecast = response["HeWeather6"][0]["daily_forecast"][0]
-        weather = forecast["cond_txt_d"]
-        temp_max = forecast["tmp_max"]
-        temp_min = forecast["tmp_min"]
-        wind_dir = forecast["wind_dir"]
-        return weather, temp_max, temp_min, wind_dir
-    except:
-        print("获取天气信息失败")
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
+    }
+    key = config["weather_key"]
+    region_url = "https://geoapi.qweather.com/v2/city/lookup?location={}&key={}".format(region, key)
+    response = get(region_url, headers=headers).json()
+    if response["code"] == "404":
+        print("推送消息失败，请检查地区名是否有误！")
         os.system("pause")
         sys.exit(1)
-
-
-def get_birthday(birthday, year, today):
-    birthday = date.fromisoformat(birthday)
-    if birthday.month > today.month or (birthday.month == today.month and birthday.day >= today.day):
-        year_date = date(year, birthday.month, birthday.day)
+    elif response["code"] == "401":
+        print("推送消息失败，请检查和风天气key是否正确！")
+        os.system("pause")
+        sys.exit(1)
     else:
-        r_last_birthday = date(year, birthday.month, birthday.day)
-        r_next_birthday = date((year + 1), birthday.month, birthday.day)
-        if (r_next_birthday - today).days > (today - r_last_birthday).days:
-            birthday_month = r_next_birthday.month
-            birthday_day = r_next_birthday.day
-        else:
-            birthday_month = r_last_birthday.month
-            birthday_day = r_last_birthday.day
-        year_date = date((year + 1), birthday_month, birthday_day)
-    days_left = (year_date - today).days
-    return days_left
+        # 获取地区的location--id
+        location_id = response["location"][0]["id"]
+    weather_url = "https://devapi.qweather.com/v7/weather/now?location={}&key={}".format(location_id, key)
+    response = get(weather_url, headers=headers).json()
+    # 天气
+    weather = response["now"]["text"]
+    # 当前温度
+    temp = response["now"]["temp"] + u"\N{DEGREE SIGN}" + "C"
+    # 最高温度
+    temp_max = response["now"]["tempMax"] + u"\N{DEGREE SIGN}" + "C"
+    # 最低温度
+    temp_min = response["now"]["tempMin"] + u"\N{DEGREE SIGN}" + "C"
+    # 风向
+    wind_dir = response["now"]["windDir"]
+    return weather, temp, temp_max, temp_min, wind_dir
 
 
-def send_message(user, message):
-    template = """
-    <div id="main" style="background:{};padding:30px;">
-        <h2>{}，祝你好运！</h2>
-        <p>{}</p>
-        <p>今天是{}，</p>
-        <p>天气：{}，最高温度：{}℃，最低温度：{}℃，风向：{}</p>
-        <p>{}</p>
-    </div>
-    """
-    color = get_color()
-    today = datetime.now().date()
-    year = today.year
-    month = today.month
-    day = today.day
-    birthday_data = config[user]
-    birthday = birthday_data["birthday"]
-    days_left = get_birthday(birthday, year, today)
-    weather, temp_max, temp_min, wind_dir = get_weather(config["region"])
-    message = message.replace("{{birthday1.name}}", birthday_data["name"]).replace("{{birthday2.name}}",
-                                                                                   birthday_data["name"]).replace(
-        "{{love_days}}", str((today - datetime.fromisoformat(config["love_date"]).date()).days)).replace(
-        "{{max_temp}}", temp_max).replace("{{min_temp}}", temp_min)
-    message = template.format(color, user, message, "{}年{}月{}日".format(year, month, day), weather, temp_max, temp_min,
-                              wind_dir, days_left)
-    access_token = get_access_token()
-    url = "https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=" + access_token
-    data = {
-        "touser": user,
-        "template_id": config["template_id"],
+def send_message(to_user, access_token, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch, note_en):
+    url = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}".format(access_token)
+    week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
+    zh_date = ZhDate(date.today()).to_date_string()
+    en_date = week_list[localtime().tm_wday]
+    msg = {
+        "touser": to_user,
+        "template_id": template_id,
         "data": {
-            "thing1": {
-                "value": user
+            "first": {
+                "value": "{}\n\n".format(note_ch),
+                "color": get_color()
             },
-            "thing2": {
-                "value": message
+            "keyword1": {
+                "value": "{}".format(region_name),
+                "color": get_color()
+            },
+            "keyword2": {
+                "value": "{} {}".format(weather, temp),
+                "color": get_color()
+            },
+            "keyword3": {
+                "value": "{}-{}".format(temp_min, temp_max),
+                "color": get_color()
+            },
+            "keyword4": {
+                "value": "{}".format(wind_dir),
+                "color": get_color()
+            },
+            "keyword5": {
+                "value": "{}".format(zh_date),
+                "color": get_color()
+            },
+            "remark": {
+                "value": "{}\n\n".format(note_en),
+                "color": get_color()
             }
         }
     }
-    headers = {'Content-Type': 'application/json'}
-    response = post(url, data=json.dumps(data), headers=headers).json()
-    if response["errcode"] == 0:
-        print("发送成功")
-    else:
-        print("发送失败")
+    post(url, json=msg)
 
 
-def main():
-    for user in config["user"]:
-        send_message(user, config["template_data"]["weather"])
-        send_message(user, config["template_data"]["birthday1"])
-        send_message(user, config["template_data"]["birthday2"])
-        send_message(user, config["template_data"]["love_date"])
-        send_message(user, config["template_data"]["note_ch"])
-        send_message(user, config["template_data"]["note_en"])
+if __name__ == '__main__':
+    config = {
+        "app_id": "wx02005b4e9c56009c",  # 小程序的app_id
+        "app_secret": "6f9234440bfd9e170e5301a8972a7515",  # 小程序的app_secret
+        "weather_key": "e099e9e4645a4e8c92ebed40dd5b9952",  # 和风天气API的key
+        "region": "温哥华",  # 地区名，如：北京
+        "to_user": ["oo14560UTTFv9at_7L8RKVh1vq2Q", "oo14564D87dTSXAfUGOPM9y0VUTs"],  # 接收消息的微信用户的openid
+        "template_id": "N4ioXa8RHyN5uDHLyl70gbThW6nfVOuPZRS7ukllSKQ"  # 模板消息的template_id
+    }
 
-
-if __name__ == "__main__":
-    with open("config.json", "r") as file:
-        config = json.load(file)
-    main()
+    region_name = config["region"]
+    access_token = get_access_token()
+    weather, temp, temp_max, temp_min, wind_dir = get_weather(region_name)
+    note_ch = "今日天气预报"
+    note_en = "Weather forecast for today"
+    send_message(config["to_user"], access_token, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch,
+                 note_en)
