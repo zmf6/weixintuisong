@@ -5,6 +5,7 @@ from datetime import datetime, date
 from zhdate import ZhDate
 import sys
 import os
+import json
 
 
 def get_color():
@@ -109,19 +110,13 @@ def send_message(to_user, access_token, region_name, weather, temp, temp_max, te
 
 
 if __name__ == '__main__':
-    config = {
-        "app_id": "wx02005b4e9c56009c",  # 小程序的app_id
-        "app_secret": "6f9234440bfd9e170e5301a8972a7515",  # 小程序的app_secret
-        "weather_key": "e099e9e4645a4e8c92ebed40dd5b9952",  # 和风天气API的key
-        "region": "温哥华",  # 地区名，如：北京
-        "to_user": ["oo14560UTTFv9at_7L8RKVh1vq2Q", "oo14564D87dTSXAfUGOPM9y0VUTs"],  # 接收消息的微信用户的openid
-        "template_id": "N4ioXa8RHyN5uDHLyl70gbThW6nfVOuPZRS7ukllSKQ"  # 模板消息的template_id
-    }
+    with open('config.json') as f:
+        config = json.load(f)
 
     region_name = config["region"]
     access_token = get_access_token()
     weather, temp, temp_max, temp_min, wind_dir = get_weather(region_name)
-    note_ch = "今日天气预报"
-    note_en = "Weather forecast for today"
+    note_ch = config["note_ch"]
+    note_en = config["note_en"]
     send_message(config["to_user"], access_token, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch,
                  note_en)
