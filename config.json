@@ -1,7 +1,7 @@
 {
   "app_id": "wx02005b4e9c56009c",
   "app_secret": "6f9234440bfd9e170e5301a8972a7515",
-  "template_id": "49KUJ31Ah-qej-BRIJuSBwm7YHazPcrcOYuK41XXRvI",
+  "template_id": "N4ioXa8RHyN5uDHLyl70gbThW6nfVOuPZRS7ukllSKQ",
   "user": ["oo14560UTTFv9at_7L8RKVh1vq2Q", "oo14564D87dTSXAfUGOPM9y0VUTs"],
   "weather_key": "e099e9e4645a4e8c92ebed40dd5b9952",
   "region": "温哥华",
@@ -11,7 +11,7 @@
   "note_ch": "",
   "note_en": "",
   "template_data": {
-    "weather": "和风天气：最高温度{{max_temp}}℃，最低温度{{min_temp}}℃",
+    "weather": "和风天气：最高温度{{temp_max}}，最低温度{{temp_min}}",
     "birthday1": "亲爱的{{birthday1.name}}，祝你生日快乐！",
     "birthday2": "亲爱的{{birthday2.name}}，祝你生日快乐！",
     "love_date": "我们在一起的日子已经{{love_days}}天啦！",
