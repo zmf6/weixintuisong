@@ -4,10 +4,13 @@ import json
 from datetime import datetime, date
 from requests import get, post
 
+
 def get_color():
-    colors = ["#FF5722", "#FF9800", "#FFC107", "#FFEB3B", "#CDDC39", "#8BC34A", "#4CAF50", "#009688", "#00BCD4", "#03A9F4", "#2196F3", "#3F51B5", "#673AB7", "#9C27B0", "#E91E63", "#F44336"]
+    colors = ["#FF5722", "#FF9800", "#FFC107", "#FFEB3B", "#CDDC39", "#8BC34A", "#4CAF50", "#009688", "#00BCD4",
+              "#03A9F4", "#2196F3", "#3F51B5", "#673AB7", "#9C27B0", "#E91E63", "#F44336"]
     today = datetime.now().day
     return colors[today % len(colors)]
+
 
 def get_access_token():
     try:
@@ -23,6 +26,7 @@ def get_access_token():
         print("获取 access_token 失败")
         os.system("pause")
         sys.exit(1)
+
 
 def get_weather(region):
     try:
@@ -43,6 +47,7 @@ def get_weather(region):
         os.system("pause")
         sys.exit(1)
 
+
 def get_birthday(birthday, year, today):
     birthday = date.fromisoformat(birthday)
     if birthday.month > today.month or (birthday.month == today.month and birthday.day >= today.day):
@@ -60,6 +65,7 @@ def get_birthday(birthday, year, today):
     days_left = (year_date - today).days
     return days_left
 
+
 def send_message(user, message):
     template = """
     <div id="main" style="background:{};padding:30px;">
@@ -71,7 +77,6 @@ def send_message(user, message):
     </div>
     """
     color = get_color()
-    content, note = get_ciba()
     today = datetime.now().date()
     year = today.year
     month = today.month
@@ -80,8 +85,12 @@ def send_message(user, message):
     birthday = birthday_data["birthday"]
     days_left = get_birthday(birthday, year, today)
     weather, temp_max, temp_min, wind_dir = get_weather(config["region"])
-    message = message.replace("{{birthday1.name}}", birthday_data["name"]).replace("{{birthday2.name}}", birthday_data["name"]).replace("{{love_days}}", str((today - datetime.fromisoformat(config["love_date"]).date()).days)).replace("{{max_temp}}", temp_max).replace("{{min_temp}}", temp_min).replace("{{note_ch}}", note).replace("{{note_en}}", content)
-    message = template.format(color, user, message, "{}年{}月{}日".format(year, month, day), weather, temp_max, temp_min, wind_dir, days_left)
+    message = message.replace("{{birthday1.name}}", birthday_data["name"]).replace("{{birthday2.name}}",
+                                                                                   birthday_data["name"]).replace(
+        "{{love_days}}", str((today - datetime.fromisoformat(config["love_date"]).date()).days)).replace(
+        "{{max_temp}}", temp_max).replace("{{min_temp}}", temp_min)
+    message = template.format(color, user, message, "{}年{}月{}日".format(year, month, day), weather, temp_max, temp_min,
+                              wind_dir, days_left)
     access_token = get_access_token()
     url = "https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=" + access_token
     data = {
@@ -103,6 +112,7 @@ def send_message(user, message):
     else:
         print("发送失败")
 
+
 def main():
     for user in config["user"]:
         send_message(user, config["template_data"]["weather"])
@@ -111,6 +121,7 @@ def main():
         send_message(user, config["template_data"]["love_date"])
         send_message(user, config["template_data"]["note_ch"])
         send_message(user, config["template_data"]["note_en"])
+
 
 if __name__ == "__main__":
     with open("config.json", "r") as file:
