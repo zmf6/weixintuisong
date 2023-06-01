@@ -52,7 +52,7 @@ def get_weather(region, key):
     # 当前温度
     temp = response["now"]["temp"] + u"\N{DEGREE SIGN}" + "C"
     # 获取每日天气数据
-    daily_data = response["daily"][0]
+    daily_data = response["daily"]
     # 最高温度
     temp_max = daily_data["tempMax"] + u"\N{DEGREE SIGN}" + "C"
     # 最低温度
