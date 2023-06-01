@@ -15,11 +15,7 @@ def get_color():
     return random.choice(color_list)
 
 
-def get_access_token():
-    # appId
-    app_id = config["app_id"]
-    # appSecret
-    app_secret = config["app_secret"]
+def get_access_token(app_id, app_secret):
     post_url = ("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={}&secret={}"
                 .format(app_id, app_secret))
     try:
@@ -31,12 +27,11 @@ def get_access_token():
     return access_token
 
 
-def get_weather(region):
+def get_weather(region, key):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                       'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
     }
-    key = config["weather_key"]
     region_url = "https://geoapi.qweather.com/v2/city/lookup?location={}&key={}".format(region, key)
     response = get(region_url, headers=headers).json()
     if response["code"] == "404":
@@ -67,7 +62,7 @@ def get_weather(region):
     return weather, temp, temp_max, temp_min, wind_dir
 
 
-def send_message(to_user, access_token, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch, note_en):
+def send_message(to_user, access_token, template_id, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch, note_en):
     url = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}".format(access_token)
     week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
     zh_date = ZhDate(date.today()).to_date_string()
@@ -110,13 +105,19 @@ def send_message(to_user, access_token, region_name, weather, temp, temp_max, te
 
 
 if __name__ == '__main__':
-    with open('config.json') as f:
-        config = json.load(f)
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
 
+    app_id = config["app_id"]
+    app_secret = config["app_secret"]
+    weather_key = config["weather_key"]
     region_name = config["region"]
-    access_token = get_access_token()
-    weather, temp, temp_max, temp_min, wind_dir = get_weather(region_name)
+    to_user = config["user"]
+    template_id = config["template_id"]
     note_ch = config["note_ch"]
     note_en = config["note_en"]
-    send_message(config["to_user"], access_token, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch,
-                 note_en)
+
+    access_token = get_access_token(app_id, app_secret)
+    weather, temp, temp_max, temp_min, wind_dir = get_weather(region_name, weather_key)
+
+    send_message(to_user, access_token, template_id, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch, note_en)
