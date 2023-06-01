@@ -84,7 +84,7 @@ def send_message(to_user, access_token, template_id, region_name, weather, temp,
     }
 
     zh_date = ZhDate(date.today()).to_date_string()
-    en_date = week_list[localtime().tm_wday]
+    en_date = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][localtime().tm_wday]
     msg = {
         "touser": to_user,
         "template_id": template_id,
