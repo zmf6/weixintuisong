@@ -62,9 +62,27 @@ def get_weather(region, key):
     return weather, temp, temp_max, temp_min, wind_dir
 
 
-def send_message(to_user, access_token, template_id, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch, note_en):
-    url = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}".format(access_token)
-    week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
+def calculate_love_days(love_date):
+    today = date.today()
+    love_start_date = datetime.strptime(love_date, "%Y-%m-%d").date()
+    love_days = (today - love_start_date).days
+    return love_days
+
+
+def send_message(to_user, access_token, template_id, region_name, weather, temp, temp_max, temp_min, wind_dir,
+                 note_ch, note_en, birthday1, birthday2, love_days):
+    url = ("https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}"
+           .format(access_token))
+
+    template_data = {
+        "weather": "和风天气：{}，最高温度{}，最低温度{}".format(weather, temp_max, temp_min),
+        "birthday1": "亲爱的{}，祝你生日快乐！".format(birthday1),
+        "birthday2": "亲爱的{}，祝你生日快乐！".format(birthday2),
+        "love_date": "我们在一起的日子已经{}天啦！".format(love_days),
+        "note_ch": note_ch,
+        "note_en": note_en
+    }
+
     zh_date = ZhDate(date.today()).to_date_string()
     en_date = week_list[localtime().tm_wday]
     msg = {
@@ -72,7 +90,7 @@ def send_message(to_user, access_token, template_id, region_name, weather, temp,
         "template_id": template_id,
         "data": {
             "first": {
-                "value": "{}\n\n".format(note_ch),
+                "value": "{}\n\n".format(template_data["note_ch"]),
                 "color": get_color()
             },
             "keyword1": {
@@ -80,7 +98,7 @@ def send_message(to_user, access_token, template_id, region_name, weather, temp,
                 "color": get_color()
             },
             "keyword2": {
-                "value": "{} {}".format(weather, temp),
+                "value": "{}".format(template_data["weather"]),
                 "color": get_color()
             },
             "keyword3": {
@@ -96,7 +114,7 @@ def send_message(to_user, access_token, template_id, region_name, weather, temp,
                 "color": get_color()
             },
             "remark": {
-                "value": "{}\n\n".format(note_en),
+                "value": "{}\n\n".format(template_data["note_en"]),
                 "color": get_color()
             }
         }
@@ -116,8 +134,13 @@ if __name__ == '__main__':
     template_id = config["template_id"]
     note_ch = config["note_ch"]
     note_en = config["note_en"]
+    birthday1 = config["birthday1"]["name"]
+    birthday2 = config["birthday2"]["name"]
+    love_date = config["love_date"]
 
     access_token = get_access_token(app_id, app_secret)
     weather, temp, temp_max, temp_min, wind_dir = get_weather(region_name, weather_key)
+    love_days = calculate_love_days(love_date)
 
-    send_message(to_user, access_token, template_id, region_name, weather, temp, temp_max, temp_min, wind_dir, note_ch, note_en)
+    send_message(to_user, access_token, template_id, region_name, weather, temp, temp_max, temp_min, wind_dir,
+                 note_ch, note_en, birthday1, birthday2, love_days)
